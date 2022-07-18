@@ -1,0 +1,6 @@
+[submodule "QuaStation-Kernel-BPi"]
+	path = QuaStation-Kernel-BPi
+	url = git@github.com:tsukumijima/QuaStation-Kernel-BPi.git
+[submodule "QuaStation-Kernel"]
+	path = QuaStation-Kernel
+	url = git@github.com:tsukumijima/QuaStation-Kernel.git
