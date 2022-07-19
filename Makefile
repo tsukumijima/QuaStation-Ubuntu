@@ -32,22 +32,26 @@ docker-image-ubuntu-rootfs:
 	@echo '--------------------------------------------------------------------------------'
 
 # au カーネル (QuaStation-Kernel: Linux 4.1.17) ベースで構築する
-build-au:
-	make -C $(BASE_DIR)/QuaStation-Kernel/ build
+build-all-au:
+	make build-kernel-au
 	make build-ubuntu-rootfs
-	cp -a $(BASE_DIR)/QuaStation-Kernel/usbflash/* $(BASE_DIR)/
+build-kernel-au:
+	make -C $(BASE_DIR)/QuaStation-Kernel/ build
+	cp -a $(BASE_DIR)/QuaStation-Kernel/usbflash/ $(BASE_DIR)/
 
 # BPi カーネル (QuaStation-Kernel-BPi: Linux 4.9.119) ベースで構築する
-build-bpi:
-	make -C $(BASE_DIR)/QuaStation-Kernel-BPi/ build
+build-all-bpi:
+	make build-kernel-bpi
 	make build-ubuntu-rootfs
-	cp -a $(BASE_DIR)/QuaStation-Kernel-BPi/usbflash/* $(BASE_DIR)/
+build-kernel-bpi:
+	make -C $(BASE_DIR)/QuaStation-Kernel-BPi/ build
+	cp -a $(BASE_DIR)/QuaStation-Kernel-BPi/usbflash/ $(BASE_DIR)/
 
 # QuaStation 向けの Ubuntu 20.04 LTS の rootfs を構築する
 ## --privileged がないと chroot 時に必要な tmpfs などのマウントができない
 ## ref: https://kazuhira-r.hatenablog.com/entry/20180220/1519112450
 build-ubuntu-rootfs:
-	docker run --privileged --rm -i -t -v `pwd`:/build/ quastation-ubuntu /bin/bash -c 'make build-ubuntu-rootfs-in-container'
+	docker run --privileged --rm -i -t -h QuaStation -v `pwd`:/build/ quastation-ubuntu /bin/bash -c 'make build-ubuntu-rootfs-in-container'
 build-ubuntu-rootfs-in-container:
 	@echo '--------------------------------------------------------------------------------'
 	@echo 'Building Ubuntu 20.04 LTS rootfs...'
