@@ -446,6 +446,7 @@ rm -rf /tmp/recpt1/
 # pm2 のインストール
 ## サービス周りは自前でセットアップする
 npm install pm2 -g
+systemctl disable pm2-undefined.service
 rm /etc/systemd/system/pm2-undefined.service
 cat <<EOF > /etc/systemd/system/pm2-root.service
 [Unit]
