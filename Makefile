@@ -12,12 +12,10 @@ BASE_DIR := $(shell pwd)
 # au カーネル (QuaStation-Kernel: Linux 4.1.17) ベースの Docker イメージを構築する
 docker-image-au:
 	make -C $(BASE_DIR)/QuaStation-Kernel/ docker-image
-	make docker-image-ubuntu-rootfs
 
 # BPi カーネル (QuaStation-Kernel-BPi: Linux 4.9.119) ベースの Docker イメージを構築する
 docker-image-bpi:
 	make -C $(BASE_DIR)/QuaStation-Kernel-BPi/ docker-image
-	make docker-image-ubuntu-rootfs
 
 # Ubuntu 20.04 LTS の rootfs を構築するための Docker イメージを構築する
 docker-image-ubuntu-rootfs:
