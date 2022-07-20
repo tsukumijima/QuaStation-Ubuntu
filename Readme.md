@@ -8,6 +8,12 @@ Qua Station 向けの Linux カーネルのビルドと、Ubuntu 20.04 LTS の r
 Qua Station 向けの Ubuntu 20.04 LTS のインストールイメージを作成するためのツールです。  
 Qua Station に搭載されているほとんどのハードウェアをフル活用できるように、Linux カーネルの構成やデバイスツリー、ソースコード、設定ファイルなどを大幅に調整しています。
 
+動作確認は Ubuntu 20.04 LTS の Linux PC (x86_64) で行っています。  
+ビルドはすべて Docker コンテナ内で実行されますが、WSL などではうまく動かないかもしれません。
+
+> 注意: このリポジトリは2つの Linux カーネルをサブモジュールとして含んでいるため、展開後のサイズがかなり大きくなります (ソースと .git だけで 4GB 程度)。  
+> Docker イメージのビルドやインストールイメージの構築でもストレージ容量を GB 単位で消費するため、最低でも 20GB はストレージ容量に余裕を持たせた状態でビルドすることを推奨します。
+
 ## ハードウェア
 
 現時点で動作する Qua Station 搭載のハードウェアは以下の通りです。
@@ -80,7 +86,7 @@ Ubuntu 20.04 LTS と組み合わせるカーネルは、
   - Qua Station (SoC: RTD1295) と近い SoC を搭載している [Banana Pi W2 (SoC: RTD1296) 向けの BSP (Board Support Package) カーネル](https://github.com/BPI-SINOVOIP/BPI-W2-bsp) をベースに、Qua Station に搭載されているハードウェアを認識できるように改良したカーネル
 - **Linux 4.1.17 ベース ([QuaStation-Kernel](https://github.com/tsukumijima/QuaStation-Kernel))**
   - KDDI テクノロジー（ Qua Station の販売元）から [GPL に基づき公開された Linux カーネル](https://github.com/Haruroid/linux-kernel-kts31) をベースに、Ubuntu 環境で一通り利用できるように改良したカーネル
-  - 実機で用いられているものとほぼ同じだが、デバイスツリーのコンパイル結果が異なる・2つ目の PCIe スロットが認識しないなどの点から、厳密には開発版（あるいは旧バージョン）である可能性が高い
+  - 実機で用いられているカーネルとほぼ同じだが、デバイスツリーのコンパイル結果が異なる・2つ目の PCIe スロットが認識しないなどの点から、厳密には開発版（あるいは旧バージョン）のソースコードである可能性が高い
   - U-Boot も GPL 適用対象だが、KDDI テクノロジーはカスタマイズした U-Boot のソースコードを開示していない（ GPL 違反では？）
 
 の2つから選択できます。
@@ -93,13 +99,22 @@ mainline のカーネルでは Realtek SoC 固有のドライバが実装され�
 ufw がうまく動作しないなど若干の問題はありますが、**基本的には Ubuntu 20.04 LTS でも問題なく動作します。一応 Docker も動きます。**  
 
 基本的には Linux 4.9.119 ベースの方をおすすめします。  
-4.1.17 ベースの方はバージョン自体が古い上に、5GHz の方の Wi-Fi IC が接続された PCIe スロットがエラーで認識されない問題を抱えています。
+4.1.17 ベースの方はバージョン自体が古い上に、5GHz の方の Wi-Fi IC が接続された PCIe スロット (PCIE2) がエラーで認識されない問題を抱えています。
 
 ## ビルド
 
 ビルドはすべて Docker コンテナ内で実行されるため、Docker 環境さえあれば、ホスト PC の環境を汚すことなく簡単にビルドできます。
 
 > 下記で解説するコマンドのうち、`bpi` の部分を `au` に変更して実行すると、4.9.119 カーネルの代わりに 4.1.17 カーネルの方をビルドできます。
+
+
+```bash
+git clone --recursive https://github.com/tsukumijima/QuaStation-Ubuntu.git
+cd QuaStation-Ubuntu
+```
+
+このリポジトリを clone します。  
+サブモジュール（Linux カーネル）も同時に clone するため、この時点で 4GB 弱のストレージ容量を消費します。
 
 ```bash
 make docker-image-bpi  # カーネルビルド用の Docker イメージを構築
@@ -116,7 +131,7 @@ make build-ubuntu-rootfs  # Ubuntu の rootfs のみビルドする場合
 
 あとは `make build-all-bpi` を実行するだけで、全自動でビルドが行われます。
 
-PC のスペックにもよりますが、ビルドには 20 分程度時間がかかります。  
+PC のスペックにもよりますが、ビルドには 30 分程度時間がかかります。  
 `Ubuntu 20.04 LTS rootfs build is completed.` と表示されたら完了です！
 
 rootfs の構築スクリプトは `build_ubuntu_rootfs.sh` にあります。  
@@ -142,6 +157,11 @@ Ubuntu 20.04 LTS (x86_64) の Docker コンテナの中でさらに chroot 環�
 - カーネルヘッダー (`rootfs/usr/src/linux-headers-4.9.119-quastation/`)
 - Ubuntu 20.04 LTS の rootfs (`rootfs/`)
 
-がそれぞれ生成されています。
+がそれぞれ生成されています。各自 USB メモリにコピーしてください。
+
+`bootfs/` 以下のファイルは FAT32 (VFAT) でフォーマットされた先頭 100MB のパーティションへ、`rootfs/` 以下のファイルは残りの ext4 パーティションに配置します。
+
+> USB メモリに焼く手順や U-Boot のコマンドについては、u-haru 氏の記事 ([記事1](https://u-haru.com/post/quastation%E7%94%A8%E3%81%AEarchlinux%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B/)・[記事2](https://u-haru.com/post/quastation%E3%81%A7archlinux%E3%82%92%E5%8B%95%E4%BD%9C%E3%81%95%E3%81%9B%E3%82%8B/)) が参考になると思います。  
+> 現時点では USB ブートのみ想定しています。eMMC からのブートは未検証です。
 
 その後、適切に U-Boot のコマンドを実行すれば、Qua Station 上で Ubuntu 20.04 LTS が起動できるはずです。
