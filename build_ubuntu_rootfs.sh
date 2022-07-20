@@ -387,7 +387,7 @@ echo 'Installing DTV tools...'
 echo '--------------------------------------------------------------------------------'
 
 # dvb-tools (dvbv5-zap が含まれる) 以外はスマートカード関連
-apt-get install -y dvb-tools libccid libpcsclite1 libpcsclite-dev pcscd pcsc-tools
+apt-get install -y dvb-tools libccid libpcsclite1 libpcsclite-dev libtool pcscd pcsc-tools
 
 # PX-S1UD (MyGica S270, MyGica VT20) のファームウェアをインストール
 ## ドライバ自体はカーネルに組み込まれている
