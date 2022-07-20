@@ -35,7 +35,7 @@ build-all-au:
 	make build-ubuntu-rootfs
 build-kernel-au:
 	make -C $(BASE_DIR)/QuaStation-Kernel/ build
-	sudo cp -a $(BASE_DIR)/QuaStation-Kernel/usbflash/ $(BASE_DIR)/
+	docker run --rm -i -t -h QuaStation -v `pwd`:/build/ quastation-ubuntu /bin/bash -c 'cp -a /build/QuaStation-Kernel/usbflash/ /build/'
 
 # BPi カーネル (QuaStation-Kernel-BPi: Linux 4.9.119) ベースで構築する
 build-all-bpi:
@@ -43,7 +43,7 @@ build-all-bpi:
 	make build-ubuntu-rootfs
 build-kernel-bpi:
 	make -C $(BASE_DIR)/QuaStation-Kernel-BPi/ build
-	sudo cp -a $(BASE_DIR)/QuaStation-Kernel-BPi/usbflash/ $(BASE_DIR)/
+	docker run --rm -i -t -h QuaStation -v `pwd`:/build/ quastation-ubuntu /bin/bash -c 'cp -a /build/QuaStation-Kernel-BPi/usbflash/ /build/'
 
 # QuaStation 向けの Ubuntu 20.04 LTS の rootfs を構築する
 ## --privileged がないと chroot 時に必要な tmpfs などのマウントができない
