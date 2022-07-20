@@ -440,8 +440,37 @@ make install
 cd /
 rm -rf /tmp/recpt1/
 
-# Mirakurun のインストール
+# pm2 のインストール
+## サービス周りは自前でセットアップする
 npm install pm2 -g
+rm /etc/systemd/system/pm2-undefined.service
+cat <<EOF > /etc/systemd/system/pm2-root.service
+[Unit]
+Description=PM2 process manager
+Documentation=https://pm2.keymetrics.io/
+After=network.target
+
+[Service]
+Type=forking
+User=root
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=PM2_HOME=/root/.pm2
+PIDFile=/root/.pm2/pm2.pid
+Restart=on-failure
+
+ExecStart=/usr/lib/node_modules/pm2/bin/pm2 resurrect
+ExecReload=/usr/lib/node_modules/pm2/bin/pm2 reload all
+ExecStop=/usr/lib/node_modules/pm2/bin/pm2 kill
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable pm2-root.service
+
+# Mirakurun のインストール
 npm install mirakurun -g --production
 mirakurun init
 mirakurun stop
