@@ -50,6 +50,9 @@ Qua Station に搭載されているほとんどのハードウェアをフル�
   - Bluetooth デバイスとして認識させるには、別途バックグラウンドで [rtk_hciattach](https://github.com/radxa/rtkbt/tree/main/uart/rtk_hciattach)（ Realtek 製の UART 接続 Bluetooth IC を BlueZ に接続するためのソフト）を起動する必要がある
   - このスクリプトで構築した Ubuntu では事前にセットアップ済みのため、追加の設定は不要
   - 実機の eMMC から抽出したファームウェア (rtl8761a_fw) でないと起動しない点が嵌まりポイント
+  - 再起動するとなぜか認識しなくなってしまう (rtk_hciattach での Bluetooth IC の初期化に失敗する)
+    - シャットダウン後に電源コードを抜いてもう一度差して起動させる場合は問題なく認識できることから、再度 Bluetooth IC を初期化する（ファームウェアを Bluetooth IC に送り込む）には一度電源供給が断たれる必要があるのかもしれない
+    - [QuaStation-Kernel-BPi](https://github.com/tsukumijima/QuaStation-Kernel-BPi) の既知の問題にある通り、現状シャットダウン後にハードウェアの電源が上手く切れていないことから、それと関連している可能性がある
 - **LTE モデム: WWHC060-D111**
   - カーネル構成で USB-ACM を有効化することで、USB 接続の tty として認識される
   - `lsusb` でも USB で接続されていることが確認できる
@@ -100,6 +103,8 @@ ufw がうまく動作しないなど若干の問題はありますが、**基�
 
 基本的には Linux 4.9.119 ベースの方をおすすめします。  
 4.1.17 ベースの方はバージョン自体が古い上に、5GHz の方の Wi-Fi IC が接続された PCIe スロット (PCIE2) がエラーで認識されない問題を抱えています。
+
+いずれのカーネルにも既知の問題があります。詳細は各カーネルの Readme.md を参照してください。
 
 ## ビルド
 
