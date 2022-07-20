@@ -177,7 +177,7 @@ echo '--------------------------------------------------------------------------
 ## wireless-tools は iwconfig など
 ## wvdial はモデムに接続するためのツール (NetworkManager 単体で接続できるので本当は要らないんだけど、念のため)
 ## zip をインストールすると unzip もついてくる
-apt-get install -y apt-transport-https build-essential cmake curl ethtool ffmpeg git gnupg htop \
+apt-get install -y apt-transport-https autoconf build-essential cmake curl ethtool ffmpeg git gnupg htop \
     inxi iw linux-firmware neofetch net-tools p7zip-full pkg-config python-is-python3 rfkill \
     software-properties-common u-boot-tools wireless-tools wvdial zip
 
@@ -225,6 +225,19 @@ cat /etc/systemd/system/rtk-bluetooth.service
 
 # systemd サービスを有効化
 systemctl enable rtk-bluetooth.service
+
+# ----------------------------------------------------------------------------------------------------
+# 起動後に QuaStation に搭載されている電源 LED を緑に点灯するようにセットアップ
+# ----------------------------------------------------------------------------------------------------
+
+cat <<EOF > /etc/rc.local
+#!/bin/bash
+
+# Turn on the POWER LED (green) at startup
+echo none > /sys/class/leds/pwr_led_g/trigger
+echo 0 > /sys/class/leds/pwr_led_g/brightness
+EOF
+chmod 700 /etc/rc.local
 
 # ----------------------------------------------------------------------------------------------------
 # QuaStation に搭載されている GPIO ボタンのイベントを udev (uevent) でトリガーできるようにセットアップ
@@ -361,6 +374,77 @@ apt-get update
 apt-get install -y tailscale
 echo '$ tailscale --version'
 tailscale --version
+
+# ----------------------------------------------------------------------------------------------------
+# DTV 関連で必要なソフトのインストール
+# ----------------------------------------------------------------------------------------------------
+
+echo '--------------------------------------------------------------------------------'
+echo 'Installing DTV tools...'
+echo '--------------------------------------------------------------------------------'
+
+# dvb-tools (dvbv5-zap が含まれる) 以外はスマートカード関連
+apt-get install -y dvb-tools libccid libpcsclite1 libpcsclite-dev pcscd pcsc-tools
+
+# PX-S1UD (MyGica S270, MyGica VT20) のファームウェアをインストール
+## ドライバ自体はカーネルに組み込まれている
+cd /tmp/
+wget http://plex-net.co.jp/plex/px-s1ud/PX-S1UD_driver_Ver.1.0.1.zip
+unzip PX-S1UD_driver_Ver.1.0.1.zip && rm PX-S1UD_driver_Ver.1.0.1.zip
+cp PX-S1UD_driver_Ver.1.0.1/x64/amd64/isdbt_rio.inp /lib/firmware/
+cd /
+rm -rf /tmp/PX-S1UD_driver_Ver.1.0.1/
+
+# px4_drv (PLEX / e-better 製チューナーのドライバ) のファームウェアをインストール
+cd /tmp/
+git clone https://github.com/nns779/px4_drv
+cd /tmp/px4_drv/fwtool/
+make
+wget http://plex-net.co.jp/plex/pxw3u4/pxw3u4_BDA_ver1x64.zip -O pxw3u4_BDA_ver1x64.zip
+unzip -oj pxw3u4_BDA_ver1x64.zip pxw3u4_BDA_ver1x64/PXW3U4.sys && rm pxw3u4_BDA_ver1x64.zip
+./fwtool PXW3U4.sys it930x-firmware.bin
+cp it930x-firmware.bin /lib/firmware/
+
+# px4_drv (PLEX / e-better 製チューナーのドライバ) のカーネルモジュール本体をインストール
+## kref_read() 関数を 4.11 からバックポートしないとビルドが通らなかったので、実際に動くかは微妙…
+cd /tmp/px4_drv/driver/
+export KVER=`ls /lib/modules/`
+make revision.h
+make -C /lib/modules/$KVER/build M=`pwd` KBUILD_VERBOSE=0
+install -D -v -m 644 px4_drv.ko /lib/modules/$KVER/kernel/extra/px4_drv.ko
+install -D -v -m 644 ../etc/99-px4video.rules /etc/udev/rules.d/99-px4video.rules
+depmod --all $KVER
+cd /
+rm -rf /tmp/px4_drv/
+
+# libaribb25 / arib-b25-stream-test のインストール
+cd /tmp/
+git clone https://github.com/tsukumijima/libaribb25
+cd /tmp/libaribb25
+cmake -B build -DWITH_PCSC_PACKAGE=libpcsclite -DPCSC_INCLUDE_DIRS=/usr/include/PCSC
+cd build
+make
+make install
+cd /
+rm -rf /tmp/libaribb25
+
+# recpt1 のインストール
+cd /tmp/
+git clone https://github.com/stz2012/recpt1
+cd /tmp/recpt1/recpt1/
+sed -i -e 's/arib25/aribb25/g' configure.ac
+./autogen.sh
+./configure --enable-b25
+make
+make install
+cd /
+rm -rf /tmp/recpt1/
+
+# Mirakurun のインストール
+npm install pm2 -g
+npm install mirakurun -g --production
+mirakurun init
+mirakurun stop
 
 # ----------------------------------------------------------------------------------------------------
 # 後処理
