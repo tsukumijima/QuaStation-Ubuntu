@@ -339,6 +339,10 @@ apt-get install -y containerd.io docker-ce docker-ce-cli docker-compose-plugin
 curl -fsSL https://github.com/zhangguanzhang/docker-compose-aarch64/releases/download/1.29.2/docker-compose-linux-arm64 > /usr/bin/docker-compose
 chmod a+x /usr/bin/docker-compose
 
+# Docker を qua ユーザーで操作できるようにする
+usermod -aG docker qua
+newgrp docker
+
 echo '$ docker version'
 docker version
 echo '$ docker-compose version (v1)'
