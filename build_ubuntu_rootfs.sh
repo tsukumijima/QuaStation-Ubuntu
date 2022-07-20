@@ -341,7 +341,6 @@ chmod a+x /usr/bin/docker-compose
 
 # Docker を qua ユーザーで操作できるようにする
 usermod -aG docker qua
-newgrp docker
 
 echo '$ docker version'
 docker version
