@@ -90,7 +90,8 @@ Ubuntu 20.04 LTS と組み合わせるカーネルは、
 - **Linux 4.1.17 ベース ([QuaStation-Kernel](https://github.com/tsukumijima/QuaStation-Kernel))**
   - KDDI テクノロジー（ Qua Station の販売元）から [GPL に基づき公開された Linux カーネル](https://github.com/Haruroid/linux-kernel-kts31) をベースに、Ubuntu 環境で一通り利用できるように改良したカーネル
   - 実機で用いられているカーネルとほぼ同じだが、デバイスツリーのコンパイル結果が異なる・2つ目の PCIe スロットが認識しないなどの点から、厳密には開発版（あるいは旧バージョン）のソースコードである可能性が高い
-  - U-Boot も GPL 適用対象だが、KDDI テクノロジーはカスタマイズした U-Boot のソースコードを開示していない（ GPL 違反では？）
+  - なお、U-Boot (GPL) のソースコードは [このリポジトリ](https://github.com/Haruroid/u-boot-kts31) で公開されている
+    - KDDI テクノロジーから4年前に一緒に開示されたものの、つい最近まで GitHub に上げていなかったということらしい…
 
 の2つから選択できます。
 
