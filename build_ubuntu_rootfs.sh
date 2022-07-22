@@ -1384,19 +1384,23 @@ recPriority: 2
 # 競合録画時に Mirakurun へ渡される優先度
 conflictPriority: 1
 
-# 録画ファイルのファイル名テンプレート
-recordedFormat: '%HALF_WIDTH_TITLE%'
-recordedFileExtension: .ts
-
 # 録画フォルダ
 recorded:
     - name: TV-Record
       path: '/mnt/hdd/TV-Record'
 
+# 録画ファイルのファイル名テンプレート
+recordedFormat: '%HALF_WIDTH_TITLE%'
+recordedFileExtension: .ts
+
+# 録画マージンの設定 (開始6秒 / 終了4秒)
+timeSpecifiedStartMargin: 6
+timeSpecifiedEndMargin: 4
+
 # サムネイルの設定
 thumbnail: '%ROOT%/thumbnail'
 thumbnailSize: 640x360
-thumbnailPosition: 5
+thumbnailPosition: 90
 
 # FFmpeg / FFprobe のパス
 ffmpeg: /usr/bin/ffmpeg
