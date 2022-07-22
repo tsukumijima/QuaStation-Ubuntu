@@ -680,7 +680,7 @@ rm -rf /tmp/PX-S1UD_driver_Ver.1.0.1/
 
 # px4_drv (PLEX / e-better 製チューナーのドライバ) のファームウェアをインストール
 cd /tmp/
-git clone https://github.com/nns779/px4_drv
+git clone https://github.com/nns779/px4_drv.git
 cd /tmp/px4_drv/fwtool/
 make
 wget http://plex-net.co.jp/plex/pxw3u4/pxw3u4_BDA_ver1x64.zip -O pxw3u4_BDA_ver1x64.zip
@@ -702,7 +702,7 @@ rm -rf /tmp/px4_drv/
 
 # libaribb25 / arib-b25-stream-test のインストール
 cd /tmp/
-git clone https://github.com/tsukumijima/libaribb25
+git clone https://github.com/tsukumijima/libaribb25.git
 cd /tmp/libaribb25
 cmake -B build -DWITH_PCSC_PACKAGE=libpcsclite -DPCSC_INCLUDE_DIRS=/usr/include/PCSC
 cd build
@@ -713,7 +713,7 @@ rm -rf /tmp/libaribb25
 
 # recpt1 のインストール
 cd /tmp/
-git clone https://github.com/stz2012/recpt1
+git clone https://github.com/stz2012/recpt1.git
 cd /tmp/recpt1/recpt1/
 sed -i -e 's/arib25/aribb25/g' configure.ac
 ./autogen.sh
@@ -754,10 +754,705 @@ WantedBy=multi-user.target
 EOF
 systemctl enable pm2-root.service
 
+echo '--------------------------------------------------------------------------------'
+echo 'Installing Mirakurun...'
+echo '--------------------------------------------------------------------------------'
+
 # Mirakurun のインストール
 npm install mirakurun -g --production
 mirakurun init
 mirakurun stop
+
+# Mirakurun の設定
+
+## サーバー設定
+cat <<EOF > /usr/local/etc/mirakurun/tuner.yml
+logLevel: 2
+path: /var/run/mirakurun.sock
+port: 40772
+allowIPv4CidrRanges:
+  - 10.0.0.0/8
+  - 100.64.0.0/10
+  - 127.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+allowIPv6CidrRanges:
+  - fc00::/7
+hostname: quastation
+EOF
+
+## チャンネル設定 (地上波はスカイツリー波 + tvk)
+cat <<EOF > /usr/local/etc/mirakurun/channels.yml
+- name: ＴＯＫＹＯ　ＭＸ
+  type: GR
+  channel: '16'
+  isDisabled: false
+- name: ｔｖｋ
+  type: GR
+  channel: '18'
+  isDisabled: false
+- name: フジテレビ
+  type: GR
+  channel: '21'
+  isDisabled: false
+- name: ＴＢＳ
+  type: GR
+  channel: '22'
+  isDisabled: false
+- name: テレビ東京
+  type: GR
+  channel: '23'
+  isDisabled: false
+- name: テレビ朝日
+  type: GR
+  channel: '24'
+  isDisabled: false
+- name: 日テレ
+  type: GR
+  channel: '25'
+  isDisabled: false
+- name: ＮＨＫＥテレ
+  type: GR
+  channel: '26'
+  isDisabled: false
+- name: ＮＨＫ総合
+  type: GR
+  channel: '27'
+  isDisabled: false
+- name: ＢＳ朝日１
+  type: BS
+  channel: BS01_0
+  serviceId: 151
+  isDisabled: false
+- name: ＢＳ朝日２
+  type: BS
+  channel: BS01_0
+  serviceId: 152
+  isDisabled: false
+- name: ＢＳ朝日３
+  type: BS
+  channel: BS01_0
+  serviceId: 153
+  isDisabled: false
+- name: ＢＳ－ＴＢＳ
+  type: BS
+  channel: BS01_1
+  serviceId: 161
+  isDisabled: false
+- name: ＢＳ－ＴＢＳ
+  type: BS
+  channel: BS01_1
+  serviceId: 162
+  isDisabled: false
+- name: ＢＳ－ＴＢＳ
+  type: BS
+  channel: BS01_1
+  serviceId: 163
+  isDisabled: false
+- name: ＢＳテレ東
+  type: BS
+  channel: BS01_2
+  serviceId: 171
+  isDisabled: false
+- name: ＢＳテレ東２
+  type: BS
+  channel: BS01_2
+  serviceId: 172
+  isDisabled: false
+- name: ＢＳテレ東３
+  type: BS
+  channel: BS01_2
+  serviceId: 173
+  isDisabled: false
+- name: ＷＯＷＯＷプライム
+  type: BS
+  channel: BS03_0
+  serviceId: 191
+  isDisabled: false
+- name: ＮＨＫＢＳプレミアム
+  type: BS
+  channel: BS03_1
+  serviceId: 103
+  isDisabled: false
+- name: ＮＨＫＢＳプレミアム
+  type: BS
+  channel: BS03_1
+  serviceId: 104
+  isDisabled: false
+- name: ＷＯＷＯＷライブ
+  type: BS
+  channel: BS05_0
+  serviceId: 192
+  isDisabled: false
+- name: ＷＯＷＯＷシネマ
+  type: BS
+  channel: BS05_1
+  serviceId: 193
+  isDisabled: false
+- name: ＢＳ１１イレブン
+  type: BS
+  channel: BS09_0
+  isDisabled: false
+  serviceId: 211
+- name: スターチャンネル１
+  type: BS
+  channel: BS09_1
+  serviceId: 200
+  isDisabled: false
+- name: ＢＳ１２トゥエルビ
+  type: BS
+  channel: BS09_2
+  serviceId: 222
+  isDisabled: false
+- name: ＢＳスカパー！
+  type: BS
+  channel: BS11_0
+  serviceId: 241
+  isDisabled: false
+- name: 放送大学ｅｘ
+  type: BS
+  channel: BS11_1
+  serviceId: 231
+  isDisabled: false
+- name: 放送大学ｏｎ
+  type: BS
+  channel: BS11_1
+  serviceId: 232
+  isDisabled: false
+- name: ＢＳ釣りビジョン
+  type: BS
+  channel: BS11_2
+  serviceId: 251
+  isDisabled: false
+- name: ＢＳ日テレ
+  type: BS
+  channel: BS13_0
+  serviceId: 141
+  isDisabled: false
+- name: ＢＳ日テレ
+  type: BS
+  channel: BS13_0
+  serviceId: 142
+  isDisabled: false
+- name: ＢＳ日テレ
+  type: BS
+  channel: BS13_0
+  serviceId: 143
+  isDisabled: false
+- name: ＢＳフジ・１８１
+  type: BS
+  channel: BS13_1
+  serviceId: 181
+  isDisabled: false
+- name: ＢＳフジ・１８２
+  type: BS
+  channel: BS13_1
+  serviceId: 182
+  isDisabled: false
+- name: ＢＳフジ・１８３
+  type: BS
+  channel: BS13_1
+  serviceId: 183
+  isDisabled: false
+- name: ＢＳアニマックス
+  type: BS
+  channel: BS13_2
+  serviceId: 236
+  isDisabled: false
+- name: ＮＨＫＢＳ１
+  type: BS
+  channel: BS15_0
+  serviceId: 101
+  isDisabled: false
+- name: ＮＨＫＢＳ１
+  type: BS
+  channel: BS15_0
+  serviceId: 102
+  isDisabled: false
+- name: スターチャンネル２
+  type: BS
+  channel: BS15_1
+  serviceId: 201
+  isDisabled: false
+- name: スターチャンネル３
+  type: BS
+  channel: BS15_1
+  serviceId: 202
+  isDisabled: false
+- name: Ｊ　ＳＰＯＲＴＳ　４
+  type: BS
+  channel: BS19_0
+  serviceId: 245
+  isDisabled: false
+- name: Ｊ　ＳＰＯＲＴＳ　１
+  type: BS
+  channel: BS19_1
+  serviceId: 242
+  isDisabled: false
+- name: Ｊ　ＳＰＯＲＴＳ　２
+  type: BS
+  channel: BS19_2
+  serviceId: 243
+  isDisabled: false
+- name: Ｊ　ＳＰＯＲＴＳ　３
+  type: BS
+  channel: BS19_3
+  serviceId: 244
+  isDisabled: false
+- name: ＷＯＷＯＷプラス
+  type: BS
+  channel: BS21_0
+  serviceId: 252
+  isDisabled: false
+- name: 日本映画専門ｃｈ
+  type: BS
+  channel: BS21_1
+  serviceId: 255
+  isDisabled: false
+- name: グリーンチャンネル
+  type: BS
+  channel: BS21_2
+  serviceId: 234
+  isDisabled: false
+- name: ディズニーｃｈ
+  type: BS
+  channel: BS23_0
+  serviceId: 256
+  isDisabled: false
+- name: ＢＳよしもと
+  type: BS
+  channel: BS23_1
+  serviceId: 265
+  isDisabled: false
+- name: ＢＳＪａｐａｎｅｘｔ
+  type: BS
+  channel: BS23_2
+  serviceId: 263
+  isDisabled: false
+- name: ＢＳ松竹東急
+  type: BS
+  channel: BS23_3
+  serviceId: 260
+  isDisabled: false
+- name: ＴＢＳチャンネル１
+  type: CS
+  channel: CS2
+  serviceId: 296
+  isDisabled: false
+- name: テレ朝チャンネル１
+  type: CS
+  channel: CS2
+  serviceId: 298
+  isDisabled: false
+- name: テレ朝チャンネル２
+  type: CS
+  channel: CS2
+  serviceId: 299
+  isDisabled: false
+- name: ディズニージュニア
+  type: CS
+  channel: CS2
+  serviceId: 339
+  isDisabled: false
+- name: スカイＡ
+  type: CS
+  channel: CS4
+  serviceId: 250
+  isDisabled: false
+- name: 時代劇専門ｃｈ
+  type: CS
+  channel: CS4
+  serviceId: 292
+  isDisabled: false
+- name: エンタメ～テレ
+  type: CS
+  channel: CS4
+  serviceId: 301
+  isDisabled: false
+- name: ＭＴＶ
+  type: CS
+  channel: CS4
+  serviceId: 323
+  isDisabled: false
+- name: ホームドラマＣＨ
+  type: CS
+  channel: CS6
+  serviceId: 294
+  isDisabled: false
+- name: ミュージック・エア
+  type: CS
+  channel: CS6
+  serviceId: 324
+  isDisabled: false
+- name: 歌謡ポップス
+  type: CS
+  channel: CS6
+  serviceId: 329
+  isDisabled: false
+- name: カートゥーン
+  type: CS
+  channel: CS6
+  serviceId: 331
+  isDisabled: false
+- name: ディスカバリー
+  type: CS
+  channel: CS6
+  serviceId: 340
+  isDisabled: false
+- name: アニマルプラネット
+  type: CS
+  channel: CS6
+  serviceId: 341
+  isDisabled: false
+- name: ＣＮＮｊ
+  type: CS
+  channel: CS6
+  serviceId: 354
+  isDisabled: false
+- name: 囲碁・将棋チャンネル
+  type: CS
+  channel: CS6
+  serviceId: 363
+  isDisabled: false
+- name: ショップチャンネル
+  type: CS
+  channel: CS8
+  serviceId: 55
+  isDisabled: false
+- name: 東映チャンネル
+  type: CS
+  channel: CS8
+  serviceId: 218
+  isDisabled: false
+- name: Ｍｎｅｔ
+  type: CS
+  channel: CS8
+  serviceId: 318
+  isDisabled: false
+- name: 日テレＮＥＷＳ２４
+  type: CS
+  channel: CS8
+  serviceId: 349
+  isDisabled: false
+- name: 衛星劇場
+  type: CS
+  channel: CS10
+  serviceId: 219
+  isDisabled: false
+- name: ＫＢＳ　Ｗｏｒｌｄ
+  type: CS
+  channel: CS10
+  serviceId: 317
+  isDisabled: false
+- name: スポーツライブ＋
+  type: CS
+  channel: CS10
+  serviceId: 800
+  isDisabled: false
+- name: スカチャン１
+  type: CS
+  channel: CS10
+  serviceId: 801
+  isDisabled: false
+- name: ＧＡＯＲＡ
+  type: CS
+  channel: CS12
+  serviceId: 254
+  isDisabled: false
+- name: エムオン！
+  type: CS
+  channel: CS12
+  serviceId: 325
+  isDisabled: false
+- name: キッズステーション
+  type: CS
+  channel: CS12
+  serviceId: 330
+  isDisabled: false
+- name: ナショジオ
+  type: CS
+  channel: CS12
+  serviceId: 343
+  isDisabled: false
+- name: ザ・シネマ
+  type: CS
+  channel: CS14
+  serviceId: 227
+  isDisabled: false
+- name: ファミリー劇場
+  type: CS
+  channel: CS14
+  serviceId: 293
+  isDisabled: false
+- name: スーパー！ドラマＴＶ
+  type: CS
+  channel: CS14
+  serviceId: 310
+  isDisabled: false
+- name: ヒストリーチャンネル
+  type: CS
+  channel: CS14
+  serviceId: 342
+  isDisabled: false
+- name: ＳＫＹ　ＳＴＡＧＥ
+  type: CS
+  channel: CS16
+  serviceId: 290
+  isDisabled: false
+- name: ＡＸＮ　海外ドラマ
+  type: CS
+  channel: CS16
+  serviceId: 311
+  isDisabled: false
+- name: ＡＸＮミステリー
+  type: CS
+  channel: CS16
+  serviceId: 316
+  isDisabled: false
+- name: スペシャプラス
+  type: CS
+  channel: CS16
+  serviceId: 321
+  isDisabled: false
+- name: ＡＴ－Ｘ
+  type: CS
+  channel: CS16
+  serviceId: 333
+  isDisabled: false
+- name: ＢＢＣワールド
+  type: CS
+  channel: CS16
+  serviceId: 353
+  isDisabled: false
+- name: ムービープラス
+  type: CS
+  channel: CS18
+  serviceId: 240
+  isDisabled: false
+- name: ゴルフネットワーク
+  type: CS
+  channel: CS18
+  serviceId: 262
+  isDisabled: false
+- name: 銀河◆歴ドラ・サスペ
+  type: CS
+  channel: CS18
+  serviceId: 305
+  isDisabled: false
+- name: 女性ｃｈ／ＬａＬａ
+  type: CS
+  channel: CS18
+  serviceId: 314
+  isDisabled: false
+- name: フジテレビＯＮＥ
+  type: CS
+  channel: CS20
+  serviceId: 307
+  isDisabled: false
+- name: フジテレビＴＷＯ
+  type: CS
+  channel: CS20
+  serviceId: 308
+  isDisabled: false
+- name: フジテレビＮＥＸＴ
+  type: CS
+  channel: CS20
+  serviceId: 309
+  isDisabled: false
+- name: スペースシャワーＴＶ
+  type: CS
+  channel: CS20
+  serviceId: 322
+  isDisabled: false
+- name: ＱＶＣ
+  type: CS
+  channel: CS22
+  serviceId: 161
+  isDisabled: false
+- name: ＴＢＳチャンネル２
+  type: CS
+  channel: CS22
+  serviceId: 297
+  isDisabled: false
+- name: ＦＯＸ
+  type: CS
+  channel: CS22
+  serviceId: 312
+  isDisabled: false
+- name: ＴＢＳ　ＮＥＷＳ
+  type: CS
+  channel: CS22
+  serviceId: 351
+  isDisabled: false
+- name: 映画・ｃｈＮＥＣＯ
+  type: CS
+  channel: CS24
+  serviceId: 223
+  isDisabled: false
+- name: 日テレジータス
+  type: CS
+  channel: CS24
+  serviceId: 257
+  isDisabled: false
+- name: ＭＯＮＤＯ　ＴＶ
+  type: CS
+  channel: CS24
+  serviceId: 295
+  isDisabled: false
+- name: 日テレプラス
+  type: CS
+  channel: CS24
+  serviceId: 300
+  isDisabled: false
+EOF
+
+# チューナー設定
+## 使うチューナーに合わせて UI から適宜有効化すること
+cat <<EOF > /usr/local/etc/mirakurun/tuners.yml
+- name: PX-S1UD
+  types:
+    - GR
+  command: >-
+    dvbv5-zap -a 0 -c config/dvbconf-for-isdb/conf/dvbv5_channels_isdbt.conf -r
+    -P <channel>
+  decoder: arib-b25-stream-test
+  dvbDevicePath: /dev/dvb/adapter0/dvr0
+  isDisabled: true
+- name: PX-W3U4-T1
+  types:
+    - GR
+  command: recpt1 --device /dev/px4video2 <channel> - -
+  decoder: arib-b25-stream-test
+  isDisabled: true
+- name: PX-W3U4-T2
+  types:
+    - GR
+  command: recpt1 --device /dev/px4video3 <channel> - -
+  decoder: arib-b25-stream-test
+  isDisabled: true
+- name: PX-W3U4-S1
+  types:
+    - BS
+    - CS
+  command: recpt1 --device /dev/px4video0 --lnb 0 <channel> - -
+  decoder: arib-b25-stream-test
+  isDisabled: true
+- name: PX-W3U4-S2
+  types:
+    - BS
+    - CS
+  command: recpt1 --device /dev/px4video1 --lnb 0 <channel> - -
+  decoder: arib-b25-stream-test
+  isDisabled: true
+EOF
+
+echo '--------------------------------------------------------------------------------'
+echo 'Installing EPGStation...'
+echo '--------------------------------------------------------------------------------'
+
+# EPGStation のインストール
+## 実機だと npm ライブラリのインストールとビルドにかなり時間がかかるため、こっちで事前にやっておく
+cd /opt/
+git clone https://github.com/l3tnun/EPGStation.git
+cd /opt/EPGStation
+npm run all-install
+npm run build
+
+# EPGStation の設定
+cat <<EOF > config/config.yml
+# リッスンポート
+port: 8888
+
+# Mirakurun の URL (Unix ソケット経由で通信)
+mirakurunPath: http+unix://%2Fvar%2Frun%2Fmirakurun.sock/
+
+# データベースとして SQLite を使う
+dbtype: sqlite
+
+# 囲み文字を置換する
+needToReplaceEnclosingCharacters: true
+
+# ドロップチェックを有効化
+isEnabledDropCheck: true
+
+# EPG の更新間隔
+epgUpdateIntervalTime: 10
+
+# 録画時に Mirakurun へ渡される優先度
+recPriority: 2
+
+# 競合録画時に Mirakurun へ渡される優先度
+conflictPriority: 1
+
+# 録画ファイルのファイル名テンプレート
+recordedFormat: '%HALF_WIDTH_TITLE%'
+recordedFileExtension: .ts
+
+# 録画フォルダ
+recorded:
+    - name: TV-Record
+      path: '/mnt/hdd/TV-Record'
+
+# サムネイルの設定
+thumbnail: '%ROOT%/thumbnail'
+thumbnailSize: 640x360
+thumbnailPosition: 5
+
+# FFmpeg / FFprobe のパス
+ffmpeg: /usr/bin/ffmpeg
+ffprobe: /usr/bin/ffprobe
+
+# エンコードやストリーミングで使用されるプロセスの上限数
+encodeProcessNum: 2
+
+# 同時エンコード数
+concurrentEncodeNum: 1
+
+# エンコード設定
+encode:
+    - name: H.264
+      cmd: '%NODE% %ROOT%/config/enc.js'
+      suffix: .mp4
+      rate: 4.0
+
+# ストリーミング視聴時の URL スキームの設定 (iOS / Android 用)
+urlscheme:
+    m2ts:
+        ios: vlc-x-callback://x-callback-url/stream?url=PROTOCOL://ADDRESS
+        android: intent://ADDRESS#Intent;package=org.videolan.vlc;type=video;scheme=PROTOCOL;end
+    video:
+        ios: infuse://x-callback-url/play?url=PROTOCOL://ADDRESS
+        android: intent://ADDRESS#Intent;package=com.mxtech.videoplayer.ad;type=video;scheme=PROTOCOL;end
+    download:
+        ios: vlc-x-callback://x-callback-url/download?url=PROTOCOL://ADDRESS&filename=FILENAME
+
+# ストリーミング設定
+## 現状 HW エンコードが利用できないため、ライブは無変換のみ、録画は無効化
+stream:
+    live:
+        ts:
+            m2ts:
+                - name: 無変換
+    recorded:
+        ts:
+            webm: []
+            mp4: []
+            hls: []
+        encoded:
+            webm: []
+            mp4: []
+            hls: []
+EOF
+cp config/operatorLogConfig.sample.yml config/operatorLogConfig.yml
+cp config/epgUpdaterLogConfig.sample.yml config/epgUpdaterLogConfig.yml
+cp config/serviceLogConfig.sample.yml config/serviceLogConfig.yml
+cp config/enc.js.template config/enc.js
+
+# PM2 での自動起動設定
+pm2 start dist/index.js --name "EPGStation"
+pm2 save
+pm2 stop EPGStation
+cd /
 
 # ----------------------------------------------------------------------------------------------------
 # 後処理
