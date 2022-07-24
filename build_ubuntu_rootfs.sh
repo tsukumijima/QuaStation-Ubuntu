@@ -470,6 +470,130 @@ cat <<EOF > /etc/samba/smb.conf
 EOF
 
 # ----------------------------------------------------------------------------------------------------
+# 起動後に /etc/fw_env.config (U-Boot の環境変数領域の eMMC 上のアドレスが記載されたファイル) を生成する
+# シャットダウンする際に U-Boot の環境変数内の PowerStatus を off にするために必要
+# ----------------------------------------------------------------------------------------------------
+
+echo '--------------------------------------------------------------------------------'
+echo 'Setting up startup script...'
+echo '--------------------------------------------------------------------------------'
+
+cat <<EOF > /etc/fw_env.config.py
+#!/usr/bin/env python3
+
+# ----------------------------------------------------------------------------------------------------
+# /etc/fw_env.config を生成するスクリプト
+# eMMC から U-Boot のファクトリー領域を抽出し、env.txt のデータがある eMMC 上のアドレスを取得してセットする
+# 実行には root 権限が必要
+# ----------------------------------------------------------------------------------------------------
+
+import os
+import subprocess
+import sys
+
+# eMMC のデバイス名
+emmc = '/dev/mmcblk2'
+
+# dd コマンドで U-Boot のファクトリー領域を抽出
+## U-Boot のファクトリー領域の開始アドレス: 4352 × 512 = 2228224 (0x220000)
+## だいたい 128KB に収まるはずだが、念のため 512KB 分取得する
+## ref: https://github.com/Haruroid/u-boot-kts31/blob/master/include/configs/rtd1295_qa_emmc.h#L44
+result = subprocess.run(
+    ['dd', f'if={emmc}', 'of=/tmp/uboot_env.tar', 'skip=4352', 'bs=512', 'count=1024'],
+    stdout = subprocess.DEVNULL,
+    stderr = subprocess.DEVNULL,
+)
+if result.returncode != 0:
+    print(f'Failed to execute the dd command. are you root? (return code: {result.returncode})')
+    sys.exit(1)
+
+# /tmp/env.tar を読み取り、"tmp/factory/env.txt" と書かれている箇所のファイル上のインデックス（アドレス）を取得する
+## env.txt が格納されている eMMC 上の アドレスは、Android 側を起動した際に変更されるものと思われる（未検証）
+env_file_index: int = 0
+with open('/tmp/env.tar', 'rb') as file:
+    data = file.read()
+    env_file_index = data.find(b'tmp/factory/env.txt')
+    if env_file_index == -1:
+        print(f'"tmp/factory/env.txt" cannot be found.')
+        os.remove('/tmp/uboot_env.tar')
+        sys.exit(1)
+
+# 抽出したファイルを削除
+os.remove('/tmp/uboot_env.tar')
+
+# U-Boot のファクトリー領域の開始アドレス (0x220000) に、uboot_env.tar から取得したインデックス、
+# さらに 512B を足した値が env.txt がある eMMC のアドレスになる
+## env.txt やそのほかのデータは tar アーカイブとして埋まっているので、先頭には 512B のヘッダーが入っている
+## "tmp/factory/env.txt" を探していたのは、tar のヘッダーの先頭に解凍後のファイルパスが含まれているから
+## ref: http://www.redout.net/data/tar.html
+env_emmc_address = 0x220000 + env_file_index + 512
+print('U-Boot env address: ' + hex(env_emmc_address))
+
+# /etc/fw_env.config に書き込む
+## 0x20000 は U-Boot の環境変数領域のサイズ (バイト単位)
+## ref: https://github.com/Haruroid/u-boot-kts31/blob/master/include/configs/rtd1295_common.h#L64
+with open('/etc/fw_env.config', 'w', encoding='utf-8') as file:
+    file.write(f'{emmc} {hex(env_emmc_address)} 0x20000\n')
+
+EOF
+chmod a+x /etc/fw_env.config.py
+
+# ----------------------------------------------------------------------------------------------------
+# 起動後に QuaStation に搭載されている電源 LED を緑に点灯するようにセットアップ
+# 上の /etc/fw_env.config を生成するスクリプトも同時に実行する
+# ----------------------------------------------------------------------------------------------------
+
+cat <<EOF > /etc/rc.local
+#!/bin/bash
+
+# Generate /etc/fw_env.config (required to change U-Boot env) at boot time
+/etc/fw_env.config.py
+
+# Turn on the POWER LED (green) at startup
+echo none > /sys/class/leds/pwr_led_g/trigger
+echo 0 > /sys/class/leds/pwr_led_g/brightness
+EOF
+chmod 700 /etc/rc.local
+
+# ----------------------------------------------------------------------------------------------------
+# QuaStation に搭載されている GPIO ボタンのイベントを udev (uevent) でトリガーできるようにセットアップ
+# ----------------------------------------------------------------------------------------------------
+
+echo '--------------------------------------------------------------------------------'
+echo 'Setting up GPIO button driver...'
+echo '--------------------------------------------------------------------------------'
+
+# 起動時に gpio_isr.ko (https://github.com/tsukumijima/QuaStation-Kernel-BPi/blob/master/phoenix/drivers/gpio_isr/gpio_isr.c) を読み込む
+## gpio_isr.ko は Android 側の同名のプロプライエタリドライバをリバースエンジニアリングして独自に再実装したもの
+echo "gpio_isr" >> /etc/modules-load.d/modules.conf
+
+# gpio_isr.ko がボタンが押されたときに発火させる uevent を受け取れるように
+## とりあえず POWER ボタンはシャットダウン、RESET ボタンは再起動に割り当ててある
+## WPS ボタンと COPY (デバイス上は IMPORT ボタン扱い) ボタンは今のところ使い道がないので、とりあえず押すと LED が点灯するようにした
+cat <<EOF > /etc/udev/rules.d/10-gpio-buttons.rules
+# POWER button -> Shutdown
+DRIVER=="gpio_isr", ENV{button}=="POWER", RUN="/bin/bash -c \"/usr/bin/fw_setenv PowerStatus off; /usr/bin/systemctl reboot\""
+
+# RESET button -> Reboot
+DRIVER=="gpio_isr", ENV{button}=="RESET", RUN="/usr/bin/systemctl reboot"
+DRIVER=="gpio_isr", ENV{button}=="INIT", RUN="/usr/bin/systemctl reboot"
+
+# WPS button pressed down -> Turn on the LEDs
+DRIVER=="gpio_isr", ENV{button}=="WPS_DOWN", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/lte_led_g/brightness; echo 0 > /sys/class/leds/lte_led_r/brightness; echo 0 > /sys/class/leds/wifi_led_g/brightness; echo 0 > /sys/class/leds/wifi_led_r/brightness; echo 0 > /sys/class/leds/hdd_led_g/brightness; echo 0 > /sys/class/leds/hdd_led_r/brightness\""
+
+# WPS button pressed up -> Turn off the LEDs
+DRIVER=="gpio_isr", ENV{button}=="WPS_UP", RUN="/bin/bash -c \"echo 255 > /sys/class/leds/lte_led_g/brightness; echo 255 > /sys/class/leds/lte_led_r/brightness; echo 255 > /sys/class/leds/wifi_led_g/brightness; echo 255 > /sys/class/leds/wifi_led_r/brightness; echo 255 > /sys/class/leds/hdd_led_g/brightness; echo 255 > /sys/class/leds/hdd_led_r/brightness\""
+
+# COPY (IMPORT) button -> Turn on the COPY LED
+DRIVER=="gpio_isr", ENV{button}=="IMPORT", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/imp_led_g/brightness\""
+
+# COPY (IMPORT) button long pressed -> Turn off the COPY LED
+DRIVER=="gpio_isr", ENV{button}=="UNMOUNT", RUN="/bin/bash -c \"echo 255 > /sys/class/leds/imp_led_g/brightness\""
+EOF
+echo '$ cat /etc/udev/rules.d/10-gpio-buttons.rules'
+cat /etc/udev/rules.d/10-gpio-buttons.rules
+
+# ----------------------------------------------------------------------------------------------------
 # QuaStation に搭載されている RTL8761ATV を Bluetooth サービス (BlueZ) で使えるようにセットアップ
 # ----------------------------------------------------------------------------------------------------
 
@@ -505,57 +629,6 @@ cat /etc/systemd/system/rtk-bluetooth.service
 
 # systemd サービスを有効化
 systemctl enable rtk-bluetooth.service
-
-# ----------------------------------------------------------------------------------------------------
-# 起動後に QuaStation に搭載されている電源 LED を緑に点灯するようにセットアップ
-# ----------------------------------------------------------------------------------------------------
-
-cat <<EOF > /etc/rc.local
-#!/bin/bash
-
-# Turn on the POWER LED (green) at startup
-echo none > /sys/class/leds/pwr_led_g/trigger
-echo 0 > /sys/class/leds/pwr_led_g/brightness
-EOF
-chmod 700 /etc/rc.local
-
-# ----------------------------------------------------------------------------------------------------
-# QuaStation に搭載されている GPIO ボタンのイベントを udev (uevent) でトリガーできるようにセットアップ
-# ----------------------------------------------------------------------------------------------------
-
-echo '--------------------------------------------------------------------------------'
-echo 'Setting up GPIO button driver...'
-echo '--------------------------------------------------------------------------------'
-
-# 起動時に gpio_isr.ko (https://github.com/tsukumijima/QuaStation-Kernel-BPi/blob/master/phoenix/drivers/gpio_isr/gpio_isr.c) を読み込む
-## gpio_isr.ko は Android 側の同名のプロプライエタリドライバをリバースエンジニアリングして独自に再実装したもの
-echo "gpio_isr" >> /etc/modules-load.d/modules.conf
-
-# gpio_isr.ko がボタンが押されたときに発火させる uevent を受け取れるように
-## とりあえず POWER ボタンはシャットダウン、RESET ボタンは再起動に割り当ててある
-## WPS ボタンと COPY (デバイス上は IMPORT ボタン扱い) ボタンは今のところ使い道がないので、とりあえず押すと LED が点灯するようにした
-cat <<EOF > /etc/udev/rules.d/10-gpio-buttons.rules
-# POWER button -> Shutdown
-DRIVER=="gpio_isr", ENV{button}=="POWER", RUN="/usr/bin/systemctl poweroff"
-
-# RESET button -> Reboot
-DRIVER=="gpio_isr", ENV{button}=="RESET", RUN="/usr/bin/systemctl reboot"
-DRIVER=="gpio_isr", ENV{button}=="INIT", RUN="/usr/bin/systemctl reboot"
-
-# WPS button pressed down -> Turn on the LEDs
-DRIVER=="gpio_isr", ENV{button}=="WPS_DOWN", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/lte_led_g/brightness; echo 0 > /sys/class/leds/lte_led_r/brightness; echo 0 > /sys/class/leds/wifi_led_g/brightness; echo 0 > /sys/class/leds/wifi_led_r/brightness; echo 0 > /sys/class/leds/hdd_led_g/brightness; echo 0 > /sys/class/leds/hdd_led_r/brightness\""
-
-# WPS button pressed up -> Turn off the LEDs
-DRIVER=="gpio_isr", ENV{button}=="WPS_UP", RUN="/bin/bash -c \"echo 255 > /sys/class/leds/lte_led_g/brightness; echo 255 > /sys/class/leds/lte_led_r/brightness; echo 255 > /sys/class/leds/wifi_led_g/brightness; echo 255 > /sys/class/leds/wifi_led_r/brightness; echo 255 > /sys/class/leds/hdd_led_g/brightness; echo 255 > /sys/class/leds/hdd_led_r/brightness\""
-
-# COPY (IMPORT) button -> Turn on the COPY LED
-DRIVER=="gpio_isr", ENV{button}=="IMPORT", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/imp_led_g/brightness\""
-
-# COPY (IMPORT) button long pressed -> Turn off the COPY LED
-DRIVER=="gpio_isr", ENV{button}=="UNMOUNT", RUN="/bin/bash -c \"echo 255 > /sys/class/leds/imp_led_g/brightness\""
-EOF
-echo '$ cat /etc/udev/rules.d/10-gpio-buttons.rules'
-cat /etc/udev/rules.d/10-gpio-buttons.rules
 
 # ----------------------------------------------------------------------------------------------------
 # Python 3.10 / pip と Node.js 16 / npm / yarn のインストール
