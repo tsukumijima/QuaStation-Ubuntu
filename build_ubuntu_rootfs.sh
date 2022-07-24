@@ -715,7 +715,8 @@ rm -rf /tmp/libaribb25
 cd /tmp/
 git clone https://github.com/stz2012/recpt1.git
 cd /tmp/recpt1/recpt1/
-sed -i -e 's/arib25/aribb25/g' configure.ac
+find . -type f | xargs sed -i "s/arib25/aribb25/g"
+find . -type f | xargs sed -i "s/ARIB25/ARIBB25/g"
 ./autogen.sh
 ./configure --enable-b25
 make
