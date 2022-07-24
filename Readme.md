@@ -50,9 +50,7 @@ Qua Station に搭載されているほとんどのハードウェアをフル�
   - Bluetooth デバイスとして認識させるには、別途バックグラウンドで [rtk_hciattach](https://github.com/radxa/rtkbt/tree/main/uart/rtk_hciattach)（ Realtek 製の UART 接続 Bluetooth IC を BlueZ に接続するためのソフト）を起動する必要がある
   - このスクリプトで構築した Ubuntu では事前にセットアップ済みのため、追加の設定は不要
   - 実機の eMMC から抽出したファームウェア (rtl8761a_fw) でないと起動しない点が嵌まりポイント
-  - 再起動するとなぜか認識しなくなってしまう (rtk_hciattach での Bluetooth IC の初期化に失敗する)
-    - シャットダウン後に電源コードを抜いてもう一度差して起動させる場合は問題なく認識できることから、再度 Bluetooth IC を初期化する（ファームウェアを Bluetooth IC に送り込む）には一度電源供給が断たれる必要があるのかもしれない
-    - [QuaStation-Kernel-BPi](https://github.com/tsukumijima/QuaStation-Kernel-BPi) の既知の問題にある通り、現状シャットダウン後にハードウェアの電源が上手く切れていないことから、それと関連している可能性がある
+  - 以前は再起動するとなぜか認識しなくなってしまっていたが、[デバイスツリー側の調整](https://github.com/tsukumijima/QuaStation-Kernel-BPi/commit/058149f37a9540e68d3569c83aca98e29aaf4965) で解消された
 - **LTE モデム: WWHC060-D111**
   - カーネル構成で USB-ACM を有効化することで、USB 接続の tty として認識される
   - `lsusb` でも USB で接続されていることが確認できる
@@ -72,6 +70,11 @@ Qua Station に搭載されているほとんどのハードウェアをフル�
   - 実機の Android ファームウェアに含まれている gpio_isr.ko が GPIO ボタンのドライバだが、ライセンス上 GPL になっているのにソースコードが公開されていないため、リバースエンジニアリングしてドライバを自作した ([phoenix/drivers/gpio_isr/gpio_isr.c](https://github.com/tsukumijima/QuaStation-Kernel-BPi/blob/master/phoenix/drivers/gpio_isr/gpio_isr.c))
   - 多少本家の挙動と異なる部分もあるが (uevent の細かいパラメータ周り)、ボタンが押された際のイベントは正しくトリガーできているため問題ない
   - /etc/udev/rules.d/10-gpio-buttons.rules に各ボタンが押された際に実行するコマンドを記述している
+    - POWER ボタンを3秒以上長押しするとシャットダウンされる
+      - 正確には、U-Boot の環境変数にある `PowerStatus` フラグを `on` から `off` に書き換えたあとに再起動している
+      - こうすることで、U-Boot 側が POWER ボタンが押されるまで起動するのを中断してくれる
+    - RESET ボタンを押すと再起動される
+      - U-Boot の環境変数は書き換えないため、通常通り再起動される
     - WPS ボタンと COPY (IMPORT) ボタンは現状余っていることから、とりあえず押すと LED が光るように設定してある（お遊び）
 - **LED ランプ (POWER・LTE・WLAN・HDD・COPY (IMPORT))**
   - 動作させるためにデバイスツリーへの項目の追加を行った (rtd-1295-quastation.dts の `leds` の項目)
@@ -102,9 +105,9 @@ mainline のカーネルでは Realtek SoC 固有のドライバが実装され�
 できるだけ多くの搭載ハードウェアを動かすため、やむを得ず古いカーネルを利用しています。  
 ufw がうまく動作しないなど若干の問題はありますが、**基本的には Ubuntu 20.04 LTS でも問題なく動作します。一応 Docker も動きます。**  
 
-基本的には Linux 4.9.119 ベースの方をおすすめします。  
+**基本的には Linux 4.9.119 ベースの方をおすすめします。**  
 4.1.17 ベースの方はバージョン自体が古い上に、5GHz の方の Wi-Fi IC が接続された PCIe スロット (PCIE2) がエラーで認識されない問題を抱えています。  
-また、4.1.17 ではあまり動作確認をしていないため、もしかするとうまく起動できなかったりがあるかもしれません。
+また、4.1.17 ではあまり動作確認をしていないため、もしかするとうまく起動できなかったりがあるかもしれません。安定性も 4.9.119 の方が高い印象です。
 
 いずれのカーネルにも既知の問題があります。詳細は各カーネルの Readme.md を参照してください。
 
@@ -113,7 +116,6 @@ ufw がうまく動作しないなど若干の問題はありますが、**基�
 ビルドはすべて Docker コンテナ内で実行されるため、Docker 環境さえあれば、ホスト PC の環境を汚すことなく簡単にビルドできます。
 
 > 下記で解説するコマンドのうち、`bpi` の部分を `au` に変更して実行すると、4.9.119 カーネルの代わりに 4.1.17 カーネルの方をビルドできます。
-
 
 ```bash
 git clone --recursive https://github.com/tsukumijima/QuaStation-Ubuntu.git
