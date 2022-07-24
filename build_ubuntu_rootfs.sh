@@ -507,10 +507,10 @@ if result.returncode != 0:
     print(f'Failed to execute the dd command. are you root? (return code: {result.returncode})')
     sys.exit(1)
 
-# /tmp/env.tar を読み取り、"tmp/factory/env.txt" と書かれている箇所のファイル上のインデックス（アドレス）を取得する
+# /tmp/uboot_env.tar を読み取り、"tmp/factory/env.txt" と書かれている箇所のファイル上のインデックス（アドレス）を取得する
 ## env.txt が格納されている eMMC 上の アドレスは、Android 側を起動した際に変更されるものと思われる（未検証）
 env_file_index: int = 0
-with open('/tmp/env.tar', 'rb') as file:
+with open('/tmp/uboot_env.tar', 'rb') as file:
     data = file.read()
     env_file_index = data.find(b'tmp/factory/env.txt')
     if env_file_index == -1:
@@ -572,11 +572,11 @@ echo "gpio_isr" >> /etc/modules-load.d/modules.conf
 ## WPS ボタンと COPY (デバイス上は IMPORT ボタン扱い) ボタンは今のところ使い道がないので、とりあえず押すと LED が点灯するようにした
 cat <<EOF > /etc/udev/rules.d/10-gpio-buttons.rules
 # POWER button -> Shutdown
-DRIVER=="gpio_isr", ENV{button}=="POWER", RUN="/bin/bash -c \"/usr/bin/fw_setenv PowerStatus off; /usr/bin/systemctl reboot\""
+DRIVER=="gpio_isr", ENV{button}=="POWER", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/pwr_led_r/brightness; /usr/bin/fw_setenv PowerStatus off; /usr/bin/systemctl reboot\""
 
 # RESET button -> Reboot
-DRIVER=="gpio_isr", ENV{button}=="RESET", RUN="/usr/bin/systemctl reboot"
-DRIVER=="gpio_isr", ENV{button}=="INIT", RUN="/usr/bin/systemctl reboot"
+DRIVER=="gpio_isr", ENV{button}=="RESET", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/pwr_led_r/brightness; /usr/bin/systemctl reboot\""
+DRIVER=="gpio_isr", ENV{button}=="INIT", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/pwr_led_r/brightness; /usr/bin/systemctl reboot\""
 
 # WPS button pressed down -> Turn on the LEDs
 DRIVER=="gpio_isr", ENV{button}=="WPS_DOWN", RUN="/bin/bash -c \"echo 0 > /sys/class/leds/lte_led_g/brightness; echo 0 > /sys/class/leds/lte_led_r/brightness; echo 0 > /sys/class/leds/wifi_led_g/brightness; echo 0 > /sys/class/leds/wifi_led_r/brightness; echo 0 > /sys/class/leds/hdd_led_g/brightness; echo 0 > /sys/class/leds/hdd_led_r/brightness\""
