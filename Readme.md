@@ -140,7 +140,7 @@ make build-ubuntu-rootfs  # Ubuntu の rootfs のみビルドする場合
 
 あとは `make build-all-bpi` を実行するだけで、全自動でビルドが行われます。
 
-PC のスペックにもよりますが、ビルドには 30 分程度時間がかかります。  
+PC のスペックにもよりますが、ビルドにはかなり時間がかかります（私の環境だと1時間近くかかった…）。  
 `Ubuntu 20.04 LTS rootfs build is completed.` と表示されたら完了です！
 
 rootfs の構築スクリプトは `build_ubuntu_rootfs.sh` にあります。  
@@ -162,6 +162,7 @@ Ubuntu 20.04 LTS (x86_64) の Docker コンテナの中でさらに chroot 環�
 
 - Linux カーネル (`bootfs/uImage`)
 - Device Tree Blob (`bootfs/QuaStation.dtb`)
+- Audio (AVCPU) ファームウェア (`bootfs/bluecore.audio`)
 - カーネルモジュール (`rootfs/usr/lib/modules/4.9.119-quastation/`)
 - カーネルヘッダー (`rootfs/usr/src/linux-headers-4.9.119-quastation/`)
 - Ubuntu 20.04 LTS の rootfs (`rootfs/`)
@@ -173,4 +174,11 @@ Ubuntu 20.04 LTS (x86_64) の Docker コンテナの中でさらに chroot 環�
 > USB メモリに焼く手順や U-Boot のコマンドについては、u-haru 氏の記事 ([記事1](https://u-haru.com/post/quastation%E7%94%A8%E3%81%AEarchlinux%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B/)・[記事2](https://u-haru.com/post/quastation%E3%81%A7archlinux%E3%82%92%E5%8B%95%E4%BD%9C%E3%81%95%E3%81%9B%E3%82%8B/)) が参考になると思います。  
 > 現時点では USB ブートのみ想定しています。eMMC からのブートは未検証です。
 
-その後、適切に U-Boot のコマンドを実行すれば、Qua Station 上で Ubuntu 20.04 LTS が起動できるはずです。
+```bash
+env set bootcmd "usb start;fatload usb 0 0x01f00000 /QuaStation.dtb;fatload usb 0 0x03000000 /uImage;fatload usb 0 0x01b00000 /bluecore.audio;env set bootargs earlycon=uart8250,mmio32,0x98007800 console=ttyS0,115200n8 initrd=0x02200000,0x7F0000 root=/dev/sdb2 rw rootwait rootfstype=ext4 init=/sbin/init selinux=0 nmi_watchdog=1 devtmpfs.mount=1;env set bootcmd 'booti 0x03000000 - 0x01f00000';go a;b2ndbc"
+saveenv
+reset
+```
+
+その後、U-Boot のコンソールで適切にコマンドを実行すれば、Qua Station 上で Ubuntu 20.04 LTS が起動できるはずです。  
+私は上記のコマンドを U-Boot のコンソールで実行し、Linux 4.9.119 + Ubuntu 20.04 LTS を USB からブートできるようにしています。

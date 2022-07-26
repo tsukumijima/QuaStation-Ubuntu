@@ -508,7 +508,7 @@ if result.returncode != 0:
     sys.exit(1)
 
 # /tmp/uboot_env.tar を読み取り、"tmp/factory/env.txt" と書かれている箇所のファイル上のインデックス（アドレス）を取得する
-## env.txt が格納されている eMMC 上の アドレスは、Android 側を起動した際に変更されるものと思われる（未検証）
+## env.txt が格納されている eMMC 上の アドレスは、Android 側を起動した際に変更されるものと思われる
 env_file_index: int = 0
 with open('/tmp/uboot_env.tar', 'rb') as file:
     data = file.read()
@@ -554,6 +554,8 @@ echo none > /sys/class/leds/pwr_led_g/trigger
 echo 0 > /sys/class/leds/pwr_led_g/brightness
 EOF
 chmod 700 /etc/rc.local
+echo '$ cat /etc/rc.local'
+cat /etc/rc.local
 
 # ----------------------------------------------------------------------------------------------------
 # QuaStation に搭載されている GPIO ボタンのイベントを udev (uevent) でトリガーできるようにセットアップ
