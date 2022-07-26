@@ -800,8 +800,6 @@ rm -rf /tmp/recpt1/
 # pm2 のインストール
 ## サービス周りは自前でセットアップする
 npm install pm2 -g
-systemctl disable pm2-undefined.service
-rm /etc/systemd/system/pm2-undefined.service
 cat <<EOF > /etc/systemd/system/pm2-root.service
 [Unit]
 Description=PM2 process manager
@@ -1535,6 +1533,10 @@ cd /
 # ----------------------------------------------------------------------------------------------------
 # 後処理
 # ----------------------------------------------------------------------------------------------------
+
+# pm2-undefined.service を削除
+systemctl disable pm2-undefined.service
+rm /etc/systemd/system/pm2-undefined.service
 
 # apt-get のキャッシュを削除
 apt-get clean
