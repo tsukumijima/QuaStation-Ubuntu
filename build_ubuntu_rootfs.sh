@@ -596,6 +596,21 @@ echo '$ cat /etc/udev/rules.d/10-gpio-buttons.rules'
 cat /etc/udev/rules.d/10-gpio-buttons.rules
 
 # ----------------------------------------------------------------------------------------------------
+# 通常 nmcli で「管理無し」とされてしまう USB-LAN アダプタなどを NetworkManager で管理できるように設定
+# ----------------------------------------------------------------------------------------------------
+
+echo '--------------------------------------------------------------------------------'
+echo 'Setting up NetworkManager...'
+echo '--------------------------------------------------------------------------------'
+
+cat <<EOF > /etc/NetworkManager/conf.d/10-globally-managed-devices.conf
+[keyfile]
+unmanaged-devices=none
+EOF
+echo '$ cat /etc/NetworkManager/conf.d/10-globally-managed-devices.conf'
+cat /etc/NetworkManager/conf.d/10-globally-managed-devices.conf
+
+# ----------------------------------------------------------------------------------------------------
 # QuaStation に搭載されている RTL8761ATV を Bluetooth サービス (BlueZ) で使えるようにセットアップ
 # ----------------------------------------------------------------------------------------------------
 
