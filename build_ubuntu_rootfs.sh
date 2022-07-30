@@ -206,8 +206,8 @@ cat <<EOF > /etc/fstab
 # device; this may be used with UUID= as a more robust way to name devices
 # that works even if disks are added and removed. See fstab(5).
 #
-# <file system> <mount point>   <type>  <options>       <dump>  <pass>
-/dev/sataa1     /mnt/hdd        ext4    defaults        0       0
+# <file system>  <mount point>  <type>  <options>        <dump>  <pass>
+/dev/sataa1      /mnt/hdd       ext4    defaults,nofail  0       0
 EOF
 
 # Samba の設定ファイルを作成
