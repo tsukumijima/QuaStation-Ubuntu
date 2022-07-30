@@ -656,7 +656,7 @@ echo '--------------------------------------------------------------------------
 echo 'Installing Python 3.10...'
 echo '--------------------------------------------------------------------------------'
 add-apt-repository -y ppa:deadsnakes/ppa
-apt-get install -y python3.10-minimal python3.10-distutils python3.10-venv
+apt-get install -y python3.10-minimal python3.10-dev python3.10-distutils python3.10-venv
 
 # pip のインストール
 ## python3-pip だと Python 3.8 ベースの pip がインストールされるため、get-pip.py でインストールする
