@@ -552,6 +552,9 @@ cat <<EOF > /etc/rc.local
 # Turn on the POWER LED (green) at startup
 echo none > /sys/class/leds/pwr_led_g/trigger
 echo 0 > /sys/class/leds/pwr_led_g/brightness
+
+# Delete default gateway setting of LTE modem
+ip route del default via 192.168.225.1
 EOF
 chmod 700 /etc/rc.local
 echo '$ cat /etc/rc.local'
