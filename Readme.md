@@ -59,10 +59,12 @@ Qua Station に搭載されているほとんどのハードウェアをフル�
     - バンドは当然 au の範囲にしか対応していない
   - wvdial で AT コマンドが通るところまでは確認できたが、SIM は挿していないため実際に通信できるかは未確認
     - 楽天モバイルの SIM を挿して通信できたという情報がある ([ソース](https://jp.mercari.com/item/m74949972094))
-    - Web UI があるらしい ([ソース](https://twitter.com/kirohi114/status/1396511222455889927))
+    - Web UI が存在する ([ソース](https://twitter.com/kirohi114/status/1396511222455889927))
 - **USB ポート (USB 3.0 ポート × 1 / USB 2.0 ポート × 1)**
   - USB メモリを接続してブートできる程度には普通に認識する
   - ただ、今のところ 4.9.119 カーネルでは (USB 3.0 ポートなのにも関わらず) `lsusb` で USB 2.0 ポートとして扱われているのが引っかかる
+    - **2022/11/06 追記: [@mt999a さんから頂いた報告](https://github.com/tsukumijima/QuaStation-Kernel-BPi/issues/1) で、デバイスツリー上の一部の記述を変更することで USB 3.0 が利用できるようになることが判明…！**
+    - 何ヶ月も Qua Station を触っていないため私の方での確認はできていないが、Qua Station (Kernel 4.9.119) で USB 3.0 を使ってみたい方は @mt999a さんの [こちら](https://github.com/mt999a/QuaStation-Kernel-BPi/tree/feature/enable_usb3_develop) のフォークを試してみると良いかも…？
 - **SD カードスロット**
   - SD カードを挿入すると普通に `/dev` に `mmcblkX` として認識される (X は環境次第で変わる)
   - eMMC も `mmcblkX` として認識しているため、混同しないように注意
